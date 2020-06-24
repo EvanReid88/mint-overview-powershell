@@ -6,6 +6,9 @@ $USER = 'evanr777@protonmail.com'
 $PASS = 'A2uqbg2x!'
 
 $Driver = Start-SeFirefox
+# TODO use chrome
+# $ChromeDriver = New-Object OpenQA.Selenium.Chrome.ChromeDriver
+
 Enter-SeUrl -Driver $Driver -Url 'https://www.mint.com/'
 
 # todo wait
@@ -29,10 +32,8 @@ Find-SeElement -Driver $Driver -XPath '//*[@id="ius-sign-in-submit-btn"]' | Invo
 
 start-sleep -Milliseconds 10000
 
-# $CashList = Find-SeElement -Driver $Driver -XPath '//*[@id="moduleAccounts-bank"]'
-# $CashAccounts = Find-SeElement -TagName li -Element $CashList | Measure-Object
-$CashAccounts = $Driver.FindElements([OpenQA.Selenium.By]::CssSelector('accounts-data-li'))
-
+$CashAccounts = $Driver.FindElementsByClassName('accounts-data-li')
 foreach ($account in $CashAccounts) {
-  Write-Output 'test'
+  $balance = $account.FindElementByClassName('balance')
+  Write-Output $balance.Text
 }
