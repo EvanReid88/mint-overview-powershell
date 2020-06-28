@@ -1,3 +1,33 @@
+# FUNCTIONS
+Function Write-AccountInfo ($accountList, $accountType) {
+  $AccountBalanceElement = $accountList.FindElementByClassName('balance')
+  $AccountListElement = $accountList.FindElementsByClassName('accounts-data-li')
+  $outputList = New-Object System.Collections.ArrayList
+
+  foreach ($account in $AccountListElement) {
+    $accountName = $account.FindElementByClassName('accountName')
+    $balance = $account.FindElementByClassName('balance')
+  
+    $temp = New-Object System.Object
+    $temp | Add-Member -MemberType NoteProperty -Name "Account Name" -Value $accountName.Text
+    $temp | Add-Member -MemberType NoteProperty -Name "Balance" -Value $balance.Text
+  
+    $outputList.add($temp) | Out-Null
+  }
+
+  # Print account type title and total
+  Write-Host -NoNewLine "$($accountType): $($AccountBalanceElement.Text)"
+  # Print individual account information
+  $outputList | Format-Table -Property *
+}
+
+Function Write-NetWorth($Driver) {
+  $NetWorthElement = $Driver.FindElementByXPath('//*[@id="module-accounts"]/div/ul[2]/li[3]/span');
+  Write-Host "Net Worth: $($NetWorthElement.Text)"
+}
+
+
+# SCRIPT
 $URL = 'https://www.mint.com/'
 $Site = Invoke-WebRequest $URL
 
@@ -5,7 +35,7 @@ $Site = Invoke-WebRequest $URL
 $USER = ''
 $PASS = ''
 
-$Driver = Start-SeFirefox
+$Driver = Start-SeChrome
 # TODO use chrome
 # $ChromeDriver = New-Object OpenQA.Selenium.Chrome.ChromeDriver
 
@@ -30,9 +60,9 @@ Find-SeElement -Driver $Driver -Timeout 2 -XPath '//*[@id="ius-sign-in-submit-bt
 # wait for goals dialog to show, and close
 Find-SeElement -Driver $Driver -Timeout 20 -XPath '/html/body/div[8]/div/div[3]/div/div/button' | Invoke-SeClick
 
-Start-Sleep -Milliseconds 1000
+Start-Sleep -Milliseconds 300
 $Body = $Driver.FindElementsByCssSelector('#body-mint');
-$NumPress = 12
+$NumPress = 18
 
 # press down 10 times to bring accounts into view
 while ($NumPress -gt 0) {
@@ -42,30 +72,31 @@ while ($NumPress -gt 0) {
 }
 
 # Open account sections if not currently open
-$CashCaret = $Driver.FindElementsByCssSelector('#moduleAccounts-bank');
-$CreditCaret = $Driver.FindElementsByCssSelector('#moduleAccounts-credit')
-$InvestmentCaret = $Driver.FindElementsByCssSelector('#moduleAccounts-investment')
+$CashList = $Driver.FindElementsByCssSelector('#moduleAccounts-bank');
+$CreditList = $Driver.FindElementsByCssSelector('#moduleAccounts-credit')
+$InvestmentList = $Driver.FindElementsByCssSelector('#moduleAccounts-investment')
 
 # TODO create methods
-if (!($CashCaret.GetAttribute("class") -split " " -contains "open")) {
-  $CashCaret.Click()
+if (!($CashList.GetAttribute("class") -split " " -contains "open")) {
+  $CashList.Click()
 }
 
-if (!($CreditCaret.GetAttribute("class") -split " " -contains "open")) {
-  $CreditCaret.Click()
+if (!($CreditList.GetAttribute("class") -split " " -contains "open")) {
+  $CreditList.Click()
 }
 
-if (!($InvestmentCaret.GetAttribute("class") -split " " -contains "open")) {
-  $InvestmentCaret.Click()
+if (!($InvestmentList.GetAttribute("class") -split " " -contains "open")) {
+  $InvestmentList.Click()
 }
 
+$accountList = New-Object System.Collections.ArrayList
+
+Write-NetWorth
 #TODO print account name, category, net worth
-$CashAccounts = $Driver.FindElementsByClassName('accounts-data-li')
-foreach ($account in $CashAccounts) {
-  $accountName = $account.FindElementByClassName('accountName')
-  $balance = $account.FindElementByClassName('balance')
-  $output = $accountName.Text + ":       " + $balance.Text
-  Write-Output $output
-}
+Write-AccountInfo $CashList "Cash"
+Write-AccountInfo $CreditList "Credit"
+Write-AccountInfo $InvestmentList "Investments"
 
-$Driver.Quit()
+#$Driver.Quit()
+
+
